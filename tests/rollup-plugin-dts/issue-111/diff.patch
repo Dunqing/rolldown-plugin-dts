@@ -1,0 +1,20 @@
+Index: diff.patch
+===================================================================
+--- diff.patch
++++ diff.patch
+@@ -1,10 +1,10 @@
+ // index.d.ts
+-interface Stuff$1 {
+-  id: string
+-}
+-declare const Stuff$1: Stuff$1
+ interface Stuff {
+   id: string
+ }
+ declare const Stuff: Stuff
+-export { Stuff as OtherStuff, Stuff$1 as Stuff }
++interface Stuff$1 {
++  id: string
++}
++declare const Stuff$1: Stuff$1
++export { Stuff$1 as OtherStuff, Stuff }

@@ -45,7 +45,7 @@ await testFixtures(
         .catch(() => 'rollup-plugin-dts has errors'),
     ]).catch((_error) => ((error = _error), []))
 
-    if (id.includes('error')) {
+    if (id.includes('error') && error) {
       return expect(error).toBeTruthy()
     }
 

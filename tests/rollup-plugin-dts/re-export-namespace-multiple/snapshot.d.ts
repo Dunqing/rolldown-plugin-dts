@@ -17,7 +17,6 @@ declare namespace deep_d_exports {
 declare namespace only_one_d_exports {
   export { A };
 }
-//#endregion
 //#region tests/rollup-plugin-dts/re-export-namespace-multiple/index.d.ts
 interface WithA {
   a: A;

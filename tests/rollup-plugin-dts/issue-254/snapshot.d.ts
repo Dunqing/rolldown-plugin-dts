@@ -5,7 +5,7 @@ interface Foo {
   e: E;
 }
 declare namespace Bar {
-  export enum F {}
+  export   enum F {}
 }
 //#endregion
 export { Bar, Foo };

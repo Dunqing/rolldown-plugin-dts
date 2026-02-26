@@ -2,18 +2,14 @@ Index: diff.patch
 ===================================================================
 --- diff.patch
 +++ diff.patch
-@@ -1,6 +1,10 @@
+@@ -1,6 +1,6 @@
 -// main-a.ts
-+// common-qE1sjDCn.d.ts
++// main-a.d.ts
  interface A {}
++export { A }
++// main-b.d.ts
  interface B {}
 -export { A, B }
 -// main-b.ts
 -export { B } from './main-a.ts'
-+export { B as n, A as t }
-+// main-a.d.ts
-+import { t as A } from './common-qE1sjDCn.js'
-+export { A }
-+// main-b.d.ts
-+import { n as B } from './common-qE1sjDCn.js'
 +export { B }

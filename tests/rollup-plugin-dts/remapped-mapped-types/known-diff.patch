@@ -2,13 +2,17 @@ Index: diff.patch
 ===================================================================
 --- diff.patch
 +++ diff.patch
-@@ -1,18 +1,14 @@
+@@ -1,18 +1,17 @@
  // index.d.ts
 -type Getters<T> = {
 -  [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K]
 -}
-+type Getters<T> = { [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K] }
- type MyExclude<T, U> = T extends U ? never : T
+-type MyExclude<T, U> = T extends U ? never : T
++type Getters<T> = { [K in keyof T as `get${Capitalize<string & K>}`] : () => T[K] }
++type MyExclude<
++  T
++  U
++> = T extends U ? never : T
  interface Person {
    name: string
    age: number
@@ -18,7 +22,7 @@ Index: diff.patch
 -type RemoveKindField<T> = {
 -  [K in keyof T as MyExclude<K, "kind">]: T[K]
 -}
-+type RemoveKindField<T> = { [K in keyof T as MyExclude<K, "kind">]: T[K] }
++type RemoveKindField<T> = { [K in keyof T as MyExclude<K, "kind">] : T[K] }
  interface Circle {
    kind: "circle"
    radius: number

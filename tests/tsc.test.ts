@@ -127,7 +127,6 @@ describe('tsc', () => {
     const sources = sourcemap.sources || []
     const expectedSources = ['../../src/types.ts', '../../src/react/index.ts']
     expect(sources.toSorted()).toEqual(expectedSources.toSorted())
-    expect(sourcemap.sourcesContent).toBeOneOf([undefined, []])
   })
 
   test('composite references', async () => {

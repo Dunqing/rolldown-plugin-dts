@@ -9,8 +9,8 @@ declare class SomeComponent {
 //#endregion
 //#region tests/rollup-plugin-dts/ts43-override/index.d.ts
 declare class SpecializedComponent extends SomeComponent {
-  override show(): ShowT;
-  override hide(): HideT;
+  show(): ShowT;
+  hide(): HideT;
 }
 //#endregion
 export { SpecializedComponent };

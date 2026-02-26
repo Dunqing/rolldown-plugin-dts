@@ -1,0 +1,15 @@
+Index: diff.patch
+===================================================================
+--- diff.patch
++++ diff.patch
+@@ -5,8 +5,8 @@
+   show(): ShowT
+   hide(): HideT
+ }
+ declare class SpecializedComponent extends SomeComponent {
+-  override show(): ShowT
+-  override hide(): HideT
++  show(): ShowT
++  hide(): HideT
+ }
+ export { SpecializedComponent }

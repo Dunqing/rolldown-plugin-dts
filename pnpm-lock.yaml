@@ -41,6 +41,9 @@ importers:
       obug:
         specifier: ^2.1.1
         version: 2.1.1
+      typeroll:
+        specifier: link:../oxc_dts_bundler/napi
+        version: link:../oxc_dts_bundler/napi
     devDependencies:
       '@jridgewell/source-map':
         specifier: ^0.3.11

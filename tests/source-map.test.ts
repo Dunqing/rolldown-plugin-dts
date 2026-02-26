@@ -23,7 +23,7 @@ function validateSourceMap(sourcemap: string) {
   expect(consumer.version).toBe(3)
   expect(consumer.names).toEqual([])
   expect(consumer.file).toBe('index.d.ts')
-  expect(consumer.sourcesContent).toBeUndefined()
+  expect(consumer.sourcesContent).toBeDefined()
   expect(consumer.sources).toEqual([
     '../../fixtures/source-map/mod.ts',
     '../../fixtures/source-map/index.ts',
@@ -104,10 +104,9 @@ test('disable dts source map only', async () => {
   )
   expect(chunks.map((chunk) => chunk.fileName)).toMatchInlineSnapshot(`
     [
-      "index.d.ts",
       "index.js",
-      "chunk-BYypO7fO.js",
       "index.js.map",
+      "index.d.ts",
     ]
   `)
 })

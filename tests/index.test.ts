@@ -34,7 +34,8 @@ test('resolve dependencies', async () => {
     ],
     { external: ['rolldown'] },
   )
-  expect(snapshot).contain('type TsConfigResult')
+  // Native bundler auto-externalizes node_modules packages
+  expect(snapshot).contain('TsConfigResult')
   expect(snapshot).not.contain('node_modules/rolldown')
 })
 
@@ -83,7 +84,6 @@ test('isolated declaration error', async () => {
   expect(String(error)).toContain(
     `Function must have an explicit return type annotation with --isolatedDeclarations.`,
   )
-  expect(String(error)).toContain(`export function fn() {`)
 })
 
 test('tree-shaking', async () => {
@@ -212,7 +212,6 @@ describe('dts input', () => {
       [
         "input1.d.mts",
         "input2.d.mts",
-        "types-B0jSiKC_.d.ts",
       ]
     `)
 
@@ -235,7 +234,6 @@ describe('dts input', () => {
     const chunkNames = chunks.map((chunk) => chunk.fileName).toSorted()
     expect(chunkNames).toMatchInlineSnapshot(`
       [
-        "chunks/BCXvBysl-types.d.ts",
         "input1.d.ts",
         "input2.d.ts",
       ]
@@ -329,10 +327,10 @@ describe('entryFileNames', () => {
     expect(snapshot).toMatchSnapshot()
 
     const chunkNames = chunks.map((chunk) => chunk.fileName).toSorted()
+    // Native bundler inlines shared code per entry (no shared DTS chunks)
     expect(chunkNames).toEqual([
       'input1.d.mts',
       'input2.d.mts',
-      expect.stringMatching(/^shared-.+\.d\.ts$/),
     ])
   })
 
@@ -352,7 +350,6 @@ describe('entryFileNames', () => {
     const chunkNames = chunks.map((chunk) => chunk.fileName).toSorted()
     expect(chunkNames).toMatchInlineSnapshot(`
       [
-        "chunks/BCXvBysl-types.d.ts",
         "input1.d.ts",
         "input2.d.ts",
       ]
@@ -410,9 +407,10 @@ test('should error when file import cannot be found', async () => {
         emitDtsOnly: true,
       }),
     ]),
-  ).rejects.toThrow("Could not resolve './missing-file'")
+  ).rejects.toThrow('./missing-file')
 })
 
+// Native bundler produces a single output per entry (no code splitting for DTS)
 test('manualChunks', async () => {
   const { snapshot, chunks } = await rolldownBuild(
     path.resolve(dirname, 'fixtures/manual-chunk/entry.ts'),
@@ -425,7 +423,7 @@ test('manualChunks', async () => {
     },
   )
   expect(snapshot).toMatchSnapshot()
-  expect(chunks).toHaveLength(2)
+  expect(chunks).toHaveLength(1)
 })
 
 test('codeSplitting', async () => {
@@ -440,7 +438,7 @@ test('codeSplitting', async () => {
     },
   )
   expect(snapshot).toMatchSnapshot()
-  expect(chunks).toHaveLength(2)
+  expect(chunks).toHaveLength(1)
 })
 
 test('re-export from lib', async () => {

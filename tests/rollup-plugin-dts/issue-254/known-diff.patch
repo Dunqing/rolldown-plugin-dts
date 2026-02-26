@@ -2,10 +2,13 @@ Index: diff.patch
 ===================================================================
 --- diff.patch
 +++ diff.patch
-@@ -5,6 +5,5 @@
+@@ -3,8 +3,7 @@
+ interface Foo {
+   e: E
  }
  declare namespace Bar {
-   export enum F {}
+-  export enum F {}
++  export   enum F {}
  }
 -export { Bar }
 -export { Foo }

@@ -1,14 +1,10 @@
 import { fork, type ChildProcess } from 'node:child_process'
-import { existsSync } from 'node:fs'
-import { readFile, rm } from 'node:fs/promises'
+import { rm } from 'node:fs/promises'
 import path from 'node:path'
-import { parse } from '@babel/parser'
 import { createDebug } from 'obug'
-import { isolatedDeclarationSync } from 'rolldown/experimental'
 import {
   filename_to_dts,
   RE_DTS,
-  RE_DTS_MAP,
   RE_JS,
   RE_JSON,
   RE_NODE_MODULES,
@@ -25,12 +21,12 @@ import {
   type TscContext,
 } from './tsc/context.ts'
 import { runTsgo } from './tsgo.ts'
+import type { NativeBundlerContext } from './native-bundler.ts'
 import type { OptionsResolved } from './options.ts'
 import type { TscOptions, TscResult } from './tsc/index.ts'
 import type { TscFunctions } from './tsc/worker.ts'
-import type { TSPropertySignature } from '@babel/types'
 import type { BirpcReturn } from 'birpc'
-import type { Plugin, SourceMapInput } from 'rolldown'
+import type { Plugin } from 'rolldown'
 
 const debug = createDebug('rolldown-plugin-dts:generate')
 
@@ -46,41 +42,44 @@ export interface TsModule {
 /** dts filename -> ts module */
 export type DtsMap = Map<string, TsModule>
 
-export function createGeneratePlugin({
-  tsconfig,
-  tsconfigRaw,
-  build,
-  incremental,
-  cwd,
-  oxc,
-  emitDtsOnly,
-  vue,
-  tsMacro,
-  parallel,
-  eager,
-  tsgo,
-  newContext,
-  emitJs,
-  sourcemap,
-}: Pick<
-  OptionsResolved,
-  | 'cwd'
-  | 'tsconfig'
-  | 'tsconfigRaw'
-  | 'build'
-  | 'incremental'
-  | 'oxc'
-  | 'emitDtsOnly'
-  | 'vue'
-  | 'tsMacro'
-  | 'parallel'
-  | 'eager'
-  | 'tsgo'
-  | 'newContext'
-  | 'emitJs'
-  | 'sourcemap'
->): Plugin {
-  const dtsMap: DtsMap = new Map<string, TsModule>()
+export function createGeneratePlugin(
+  {
+    tsconfig,
+    tsconfigRaw,
+    build,
+    incremental,
+    cwd,
+    oxc,
+    emitDtsOnly,
+    vue,
+    tsMacro,
+    parallel,
+    eager,
+    tsgo,
+    newContext,
+    emitJs,
+    sourcemap,
+  }: Pick<
+    OptionsResolved,
+    | 'cwd'
+    | 'tsconfig'
+    | 'tsconfigRaw'
+    | 'build'
+    | 'incremental'
+    | 'oxc'
+    | 'emitDtsOnly'
+    | 'vue'
+    | 'tsMacro'
+    | 'parallel'
+    | 'eager'
+    | 'tsgo'
+    | 'newContext'
+    | 'emitJs'
+    | 'sourcemap'
+  >,
+  ctx: NativeBundlerContext,
+): Plugin {
+  const { dtsMap } = ctx
 
   /**
    * A map of input id to output file name
@@ -97,15 +96,18 @@ export function createGeneratePlugin({
   let rpc: BirpcReturn<TscFunctions> | undefined
   let tscModule: typeof import('./tsc/index.ts')
   let tscContext: TscContext | undefined
-  let tsgoDist: string | undefined
-  const rootDir = tsconfig ? path.dirname(tsconfig) : cwd
 
   return {
     name: 'rolldown-plugin-dts:generate',
 
     async buildStart(options) {
       if (tsgo) {
-        tsgoDist = await runTsgo(rootDir, tsconfig, sourcemap, tsgo.path)
+        ctx.tsgoDist = await runTsgo(
+          ctx.rootDir,
+          tsconfig,
+          sourcemap,
+          tsgo.path,
+        )
       } else if (!oxc) {
         // tsc
         if (parallel) {
@@ -124,6 +126,51 @@ export function createGeneratePlugin({
           if (newContext) {
             tscContext = createContext()
           }
+        }
+      }
+
+      // Expose oxc options to the native bundler context
+      ctx.oxcOptions = oxc
+
+      // Expose tscEmit function for native bundler
+      if (!tsgo && !oxc) {
+        ctx.tscEmit = async (id: string): Promise<TscResult> => {
+          const entries = eager
+            ? undefined
+            : Array.from(dtsMap.values())
+                .filter((v) => v.isEntry)
+                .map((v) => v.id)
+          const tscOptions: Omit<TscOptions, 'programs'> = {
+            tsconfig,
+            tsconfigRaw,
+            build,
+            incremental,
+            cwd,
+            entries,
+            id,
+            sourcemap,
+            vue,
+            tsMacro,
+            context: tscContext,
+          }
+          if (parallel) {
+            return rpc!.tscEmit(tscOptions)
+          }
+          return tscModule.tscEmit(tscOptions)
+        }
+      }
+
+      // Expose deferred cleanup
+      ctx.cleanup = async () => {
+        childProcess?.kill()
+        if (!debug.enabled && ctx.tsgoDist) {
+          await rm(ctx.tsgoDist, { recursive: true, force: true }).catch(
+            () => {},
+          )
+        }
+        ctx.tsgoDist = undefined
+        if (newContext) {
+          tscContext = undefined
         }
       }
 
@@ -191,11 +238,15 @@ export function createGeneratePlugin({
           debug('register dts source: %s', id)
 
           if (isEntry) {
-            const name = inputAliasMap.get(id)
+            const alias = inputAliasMap.get(id)
+            // Always provide a name so Rolldown uses entryFileNames (not chunkFileNames)
+            const chunkName = alias
+              ? `${alias}.d`
+              : `${path.basename(dtsId, path.extname(dtsId))}`
             this.emitFile({
               type: 'chunk',
               id: dtsId,
-              name: name ? `${name}.d` : undefined,
+              name: chunkName,
             })
           }
         }
@@ -214,147 +265,12 @@ export function createGeneratePlugin({
           exclude: [RE_NODE_MODULES],
         },
       },
-      async handler(dtsId) {
+      handler(dtsId) {
         if (!dtsMap.has(dtsId)) return
-
-        const { code, id } = dtsMap.get(dtsId)!
-        let dtsCode: string | undefined
-        let map: SourceMapInput | undefined
-        debug('generate dts %s from %s', dtsId, id)
-
-        if (tsgo) {
-          if (RE_VUE.test(id))
-            throw new Error('tsgo does not support Vue files.')
-          const dtsPath = path.resolve(
-            tsgoDist!,
-            path.relative(path.resolve(rootDir), filename_to_dts(id)),
-          )
-          if (!existsSync(dtsPath)) {
-            debug('[tsgo]', dtsPath, 'is missing')
-            throw new Error(
-              `tsgo did not generate dts file for ${id}, please check your tsconfig.`,
-            )
-          }
-
-          dtsCode = await readFile(dtsPath, 'utf8')
-
-          const mapPath = `${dtsPath}.map`
-          if (existsSync(mapPath)) {
-            const mapRaw = await readFile(mapPath, 'utf8')
-            map = {
-              ...JSON.parse(mapRaw),
-              sources: [id],
-            }
-          }
-        } else if (oxc && !RE_VUE.test(id)) {
-          const result = isolatedDeclarationSync(id, code, oxc)
-          if (result.errors.length) {
-            const [error] = result.errors
-            return this.error({
-              message: error.message,
-              frame: error.codeframe || undefined,
-            })
-          }
-          dtsCode = result.code
-          if (result.map) {
-            map = result.map
-            map.sourcesContent = undefined
-          }
-        } else {
-          const entries = eager
-            ? undefined
-            : Array.from(dtsMap.values())
-                .filter((v) => v.isEntry)
-                .map((v) => v.id)
-          const options: Omit<TscOptions, 'programs'> = {
-            tsconfig,
-            tsconfigRaw,
-            build,
-            incremental,
-            cwd,
-            entries,
-            id,
-            sourcemap,
-            vue,
-            tsMacro,
-            context: tscContext,
-          }
-          let result: TscResult
-          if (parallel) {
-            result = await rpc!.tscEmit(options)
-          } else {
-            result = tscModule.tscEmit(options)
-          }
-          if (result.error) {
-            return this.error(result.error)
-          }
-          dtsCode = result.code
-          map = result.map
-
-          if (dtsCode && RE_JSON.test(id)) {
-            // if contains invalid json keys
-            if (dtsCode.includes('declare const _exports')) {
-              if (
-                dtsCode.includes('declare const _exports: {') &&
-                !dtsCode.includes('\n}[];')
-              ) {
-                // patch: add named export
-                const exports = collectJsonExports(dtsCode)
-                let i = 0
-                dtsCode += exports
-                  .map((e) => {
-                    const valid = `_${e.replaceAll(/[^\w$]/g, '_')}${i++}`
-                    const jsonKey = JSON.stringify(e)
-                    return `declare let ${valid}: typeof _exports[${jsonKey}]\nexport { ${valid} as ${jsonKey} }`
-                  })
-                  .join('\n')
-              }
-            } else {
-              // patch: add default export
-              const exportMap = collectJsonExportMap(dtsCode)
-              dtsCode += `
-declare namespace __json_default_export {
-  export { ${Array.from(exportMap.entries())
-    .map(([exported, local]) =>
-      exported === local ? exported : `${local} as ${exported}`,
-    )
-    .join(', ')} }
-}
-export { __json_default_export as default }`
-            }
-          }
-        }
-
-        return {
-          code: dtsCode || '',
-          map,
-        }
+        debug('load dummy for dts %s', dtsId)
+        // Return dummy content — the native bundler generates the real .d.ts
+        return { code: 'export {}' }
       },
-    },
-
-    generateBundle: emitDtsOnly
-      ? (options, bundle) => {
-          for (const fileName of Object.keys(bundle)) {
-            if (
-              bundle[fileName].type === 'chunk' &&
-              !RE_DTS.test(fileName) &&
-              !RE_DTS_MAP.test(fileName)
-            ) {
-              delete bundle[fileName]
-            }
-          }
-        }
-      : undefined,
-
-    async buildEnd() {
-      childProcess?.kill()
-      if (!debug.enabled && tsgoDist) {
-        await rm(tsgoDist, { recursive: true, force: true }).catch(() => {})
-      }
-      tsgoDist = undefined
-      if (newContext) {
-        tscContext = undefined
-      }
     },
 
     watchChange(id) {
@@ -363,72 +279,4 @@ export { __json_default_export as default }`
       }
     },
   }
-}
-
-function collectJsonExportMap(code: string): Map<string, string> {
-  const exportMap = new Map<string, string>()
-  const { program } = parse(code, {
-    sourceType: 'module',
-    plugins: [['typescript', { dts: true }]],
-    errorRecovery: true,
-  })
-
-  for (const decl of program.body) {
-    if (decl.type === 'ExportNamedDeclaration') {
-      // export declare let Hello: string;
-      if (decl.declaration) {
-        if (decl.declaration.type === 'VariableDeclaration') {
-          for (const vdecl of decl.declaration.declarations) {
-            if (vdecl.id.type === 'Identifier') {
-              exportMap.set(vdecl.id.name, vdecl.id.name)
-            }
-          }
-        } else if (
-          decl.declaration.type === 'TSModuleDeclaration' &&
-          decl.declaration.id.type === 'Identifier'
-        ) {
-          exportMap.set(decl.declaration.id.name, decl.declaration.id.name)
-        }
-      } else if (decl.specifiers.length) {
-        for (const spec of decl.specifiers) {
-          if (
-            spec.type === 'ExportSpecifier' &&
-            spec.exported.type === 'Identifier'
-          ) {
-            // declare let _class: string
-            // export { _class as class }
-            exportMap.set(
-              spec.exported.name,
-              spec.local.type === 'Identifier'
-                ? spec.local.name
-                : spec.exported.name,
-            )
-          }
-        }
-      }
-    }
-  }
-
-  return exportMap
-}
-
-/** `declare const _exports` mode */
-function collectJsonExports(code: string) {
-  const exports: string[] = []
-  const { program } = parse(code, {
-    sourceType: 'module',
-    plugins: [['typescript', { dts: true }]],
-  })
-  const members = (program.body as any)[0].declarations[0].id.typeAnnotation
-    .typeAnnotation.members as TSPropertySignature[]
-
-  for (const member of members) {
-    if (member.key.type === 'Identifier') {
-      exports.push(member.key.name)
-    } else if (member.key.type === 'StringLiteral') {
-      exports.push(member.key.value)
-    }
-  }
-
-  return exports
 }

@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { realpathSync } from 'node:fs'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -38,7 +39,7 @@ export async function runTsgo(
     debug('[tsgo] using tsgo from node_modules', tsgo)
   }
 
-  const tsgoDist = await mkdtemp(path.join(tmpdir(), 'rolldown-plugin-dts-'))
+  const tsgoDist = realpathSync(await mkdtemp(path.join(tmpdir(), 'rolldown-plugin-dts-')))
   debug('[tsgo] tsgoDist', tsgoDist)
 
   const args = [

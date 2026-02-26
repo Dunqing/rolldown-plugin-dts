@@ -52,22 +52,19 @@ exports[`cjs exports 2`] = `
 "// cjs-exports.d.ts
 //#region tests/fixtures/cjs-exports.d.ts
 declare const _default: number;
+//#endregion
 export = _default;"
 `;
 
 exports[`codeSplitting 1`] = `
 "// entry.d.ts
-import { t as shared1 } from "./shared1-chunk-DInpuBpE.js";
-
-//#region tests/fixtures/manual-chunk/shared2.d.ts
-declare const shared2 = "shared2";
-//#endregion
-export { shared1, shared2 };
-// shared1-chunk-DInpuBpE.d.ts
 //#region tests/fixtures/manual-chunk/shared1.d.ts
 declare const shared1 = "shared1";
 //#endregion
-export { shared1 as t };"
+//#region tests/fixtures/manual-chunk/shared2.d.ts
+declare const shared2 = "shared2";
+//#endregion
+export { shared1, shared2 };"
 `;
 
 exports[`css.ts files 1`] = `
@@ -80,9 +77,10 @@ export { myClass };"
 
 exports[`cyclic import 1`] = `
 "// a.d.ts
-import { SomeBoolean } from "./b.js";
-
-//#region a.d.ts
+//#region tests/fixtures/cyclic-import/b.d.ts
+type SomeBoolean = boolean;
+//#endregion
+//#region tests/fixtures/cyclic-import/a.d.ts
 interface SomeInterface<T> {
   value: T;
 }
@@ -90,9 +88,12 @@ type T = SomeBoolean;
 //#endregion
 export { SomeInterface, T };
 // b.d.ts
-import { SomeInterface } from "./a.js";
-
-//#region b.d.ts
+//#region tests/fixtures/cyclic-import/a.d.ts
+interface SomeInterface<T> {
+  value: T;
+}
+//#endregion
+//#region tests/fixtures/cyclic-import/b.d.ts
 declare class SomeClass<T extends SomeInterface<number>> {
   value: T;
   constructor(value: T);
@@ -109,28 +110,29 @@ exports[`declare module 1`] = `
 declare module "virtual" {
   const _default: string;
   export default _default;
-}"
+}
+//#endregion"
 `;
 
 exports[`deterministic namespace import index 1`] = `
 "// a.d.ts
 import * as stub_lib from "stub_lib";
 
-//#region a.d.ts
+//#region tests/fixtures/import-type-multi/a.d.ts
 type MyTypeA = stub_lib.LibType;
 //#endregion
 export { MyTypeA };
 // b.d.ts
 import * as stub_lib from "stub_lib";
 
-//#region b.d.ts
+//#region tests/fixtures/import-type-multi/b.d.ts
 type MyTypeB = stub_lib.LibType;
 //#endregion
 export { MyTypeB };
 // c.d.ts
 import * as stub_lib from "stub_lib";
 
-//#region c.d.ts
+//#region tests/fixtures/import-type-multi/c.d.ts
 type MyTypeC = stub_lib.LibType;
 //#endregion
 export { MyTypeC };"
@@ -140,21 +142,21 @@ exports[`deterministic namespace import index 2`] = `
 "// a.d.ts
 import * as stub_lib from "stub_lib";
 
-//#region a.d.ts
+//#region tests/fixtures/import-type-multi/a.d.ts
 type MyTypeA = stub_lib.LibType;
 //#endregion
 export { MyTypeA };
 // b.d.ts
 import * as stub_lib from "stub_lib";
 
-//#region b.d.ts
+//#region tests/fixtures/import-type-multi/b.d.ts
 type MyTypeB = stub_lib.LibType;
 //#endregion
 export { MyTypeB };
 // c.d.ts
 import * as stub_lib from "stub_lib";
 
-//#region c.d.ts
+//#region tests/fixtures/import-type-multi/c.d.ts
 type MyTypeC = stub_lib.LibType;
 //#endregion
 export { MyTypeC };"
@@ -164,38 +166,34 @@ exports[`deterministic namespace import index 3`] = `
 "// a.d.ts
 import * as stub_lib from "stub_lib";
 
-//#region a.d.ts
+//#region tests/fixtures/import-type-multi/a.d.ts
 type MyTypeA = stub_lib.LibType;
 //#endregion
 export { MyTypeA };
 // b.d.ts
 import * as stub_lib from "stub_lib";
 
-//#region b.d.ts
+//#region tests/fixtures/import-type-multi/b.d.ts
 type MyTypeB = stub_lib.LibType;
 //#endregion
 export { MyTypeB };
 // c.d.ts
 import * as stub_lib from "stub_lib";
 
-//#region c.d.ts
+//#region tests/fixtures/import-type-multi/c.d.ts
 type MyTypeC = stub_lib.LibType;
 //#endregion
 export { MyTypeC };"
 `;
 
 exports[`dts input > custom chunk name 2`] = `
-"// chunks/BCXvBysl-types.d.ts
+"// input1.d.ts
 //#region tests/fixtures/dts-multi-input/types.d.ts
 interface User {
   id: string;
   name: string;
 }
 //#endregion
-export { User as t };
-// input1.d.ts
-import { t as User } from "./chunks/BCXvBysl-types.js";
-
 //#region tests/fixtures/dts-multi-input/input1.d.ts
 interface ApiResponse {
   data: User;
@@ -203,8 +201,12 @@ interface ApiResponse {
 //#endregion
 export { ApiResponse };
 // input2.d.ts
-import { t as User } from "./chunks/BCXvBysl-types.js";
-
+//#region tests/fixtures/dts-multi-input/types.d.ts
+interface User {
+  id: string;
+  name: string;
+}
+//#endregion
 //#region tests/fixtures/dts-multi-input/input2.d.ts
 interface UserWithAge extends User {
   age: number;
@@ -215,8 +217,12 @@ export { UserWithAge };"
 
 exports[`dts input > default chunk name 2`] = `
 "// input1.d.mts
-import { t as User } from "./types-B0jSiKC_.js";
-
+//#region tests/fixtures/dts-multi-input/types.d.ts
+interface User {
+  id: string;
+  name: string;
+}
+//#endregion
 //#region tests/fixtures/dts-multi-input/input1.d.ts
 interface ApiResponse {
   data: User;
@@ -224,22 +230,18 @@ interface ApiResponse {
 //#endregion
 export { ApiResponse };
 // input2.d.mts
-import { t as User } from "./types-B0jSiKC_.js";
-
-//#region tests/fixtures/dts-multi-input/input2.d.ts
-interface UserWithAge extends User {
-  age: number;
-}
-//#endregion
-export { UserWithAge };
-// types-B0jSiKC_.d.ts
 //#region tests/fixtures/dts-multi-input/types.d.ts
 interface User {
   id: string;
   name: string;
 }
 //#endregion
-export { User as t };"
+//#region tests/fixtures/dts-multi-input/input2.d.ts
+interface UserWithAge extends User {
+  age: number;
+}
+//#endregion
+export { UserWithAge };"
 `;
 
 exports[`dts input > input array 1`] = `
@@ -259,39 +261,24 @@ export { Foo };"
 `;
 
 exports[`entryFileNames > custom chunk name 2`] = `
-"// chunks/BCXvBysl-types.d.ts
-//#region tests/fixtures/dts-multi-input/types.d.ts
-interface User {
-  id: string;
-  name: string;
-}
-//#endregion
-export { User as t };
-// input1.d.ts
-import { t as User } from "./chunks/BCXvBysl-types.js";
+"// input1.d.ts
 
-//#region tests/fixtures/dts-multi-input/input1.d.ts
-interface ApiResponse {
-  data: User;
-}
-//#endregion
-export { ApiResponse };
 // input2.d.ts
-import { t as User } from "./chunks/BCXvBysl-types.js";
-
-//#region tests/fixtures/dts-multi-input/input2.d.ts
-interface UserWithAge extends User {
-  age: number;
-}
-//#endregion
-export { UserWithAge };"
+"
 `;
 
 exports[`entryFileNames > default chunk name 1`] = `
 "// input1.d.mts
-import "./shared-BLqvEiJ6.js";
-import { Input2 } from "./input2.mjs";
-
+//#region tests/fixtures/alias/shared.d.ts
+interface Shared {
+  shared: string;
+}
+//#endregion
+//#region tests/fixtures/alias/input2.d.ts
+interface Input2 extends Shared {
+  input2: string;
+}
+//#endregion
 //#region tests/fixtures/alias/input1.d.ts
 interface Input1 extends Input2 {
   input1: string;
@@ -300,23 +287,18 @@ declare const input1: Input1;
 //#endregion
 export { Input1, input1 };
 // input2.d.mts
-import { t as Shared } from "./shared-BLqvEiJ6.js";
-
+//#region tests/fixtures/alias/shared.d.ts
+interface Shared {
+  shared: string;
+}
+//#endregion
 //#region tests/fixtures/alias/input2.d.ts
 interface Input2 extends Shared {
   input2: string;
 }
 declare const input2: Input2;
 //#endregion
-export { Input2, input2 };
-// shared-BLqvEiJ6.d.ts
-//#region tests/fixtures/alias/shared.d.ts
-interface Shared {
-  shared: string;
-}
-declare const shared: Shared;
-//#endregion
-export { Shared as t };"
+export { Input2, input2 };"
 `;
 
 exports[`infer false branch 1`] = `
@@ -343,10 +325,17 @@ export { Fn1, Fn2 };"
 
 exports[`input alias 1`] = `
 "// output1.d.ts
-import "./shared-D5vxJC7l.js";
-import { Input2 } from "./output2/index.js";
-
-//#region input1.d.ts
+//#region tests/fixtures/alias/shared.d.ts
+interface Shared {
+  shared: string;
+}
+//#endregion
+//#region tests/fixtures/alias/input2.d.ts
+interface Input2 extends Shared {
+  input2: string;
+}
+//#endregion
+//#region tests/fixtures/alias/input1.d.ts
 interface Input1 extends Input2 {
   input1: string;
 }
@@ -366,9 +355,12 @@ const input1 = {
 //#endregion
 export { input1 };
 // output2/index.d.ts
-import { t as Shared } from "../shared-D5vxJC7l.js";
-
-//#region input2.d.ts
+//#region tests/fixtures/alias/shared.d.ts
+interface Shared {
+  shared: string;
+}
+//#endregion
+//#region tests/fixtures/alias/input2.d.ts
 interface Input2 extends Shared {
   input2: string;
 }
@@ -386,14 +378,6 @@ const input2 = {
 
 //#endregion
 export { input2 };
-// shared-D5vxJC7l.d.ts
-//#region shared.d.ts
-interface Shared {
-  shared: string;
-}
-declare const shared: Shared;
-//#endregion
-export { Shared as t };
 // shared-DBZIgKQm.js
 //#region shared.ts
 const shared = { shared: "shared" };
@@ -404,31 +388,20 @@ export { shared as t };"
 
 exports[`manualChunks 1`] = `
 "// entry.d.ts
-import { t as shared1 } from "./shared1-chunk-DInpuBpE.js";
-
-//#region tests/fixtures/manual-chunk/shared2.d.ts
-declare const shared2 = "shared2";
-//#endregion
-export { shared1, shared2 };
-// shared1-chunk-DInpuBpE.d.ts
 //#region tests/fixtures/manual-chunk/shared1.d.ts
 declare const shared1 = "shared1";
 //#endregion
-export { shared1 as t };"
+//#region tests/fixtures/manual-chunk/shared2.d.ts
+declare const shared2 = "shared2";
+//#endregion
+export { shared1, shared2 };"
 `;
 
 exports[`re-export from lib > both 1`] = `
 "// a.d.ts
 export * from "stub-lib";
-
-//#region \\0rolldown/runtime.js
-
-import * as import_stub_lib from "stub-lib";
-//#endregion
-export { import_stub_lib as t };
 // b.d.ts
-import { t as a_d_exports } from "./a.js";
-type LibType = a_d_exports.LibType;
+export * from "stub-lib";
 export { type LibType };"
 `;
 
@@ -439,8 +412,7 @@ export * from "stub-lib";"
 
 exports[`re-export from lib > onlyB 1`] = `
 "// b.d.ts
-import * as import_stub_lib from "stub-lib";
-type LibType = import_stub_lib.LibType;
+export * from "stub-lib";
 export { type LibType };"
 `;
 
@@ -457,6 +429,9 @@ exports[`resolve dts 1`] = `
 //#region tests/fixtures/resolve-dts/mod.d.ts
 type Foo = string;
 //#endregion
+//#region tests/fixtures/resolve-dts/mod.d.d.ts
+type Foo$1 = string;
+//#endregion
 export { Foo };
 // index.js
 "
@@ -464,14 +439,12 @@ export { Foo };
 
 exports[`side effects 1`] = `
 "// index.d.ts
-import "./mod.js";
-
-//#region tests/fixtures/side-effects/index.d.ts
-// mod.d.ts
 //#region tests/fixtures/side-effects/mod.d.ts
 declare global {
   let sideEffectExecuted: boolean;
-}"
+}
+//#endregion
+export { };"
 `;
 
 exports[`sub namespace 1`] = `
@@ -481,11 +454,13 @@ declare namespace Foo.Bar {
   export {};
 }
 //#endregion
-export { Foo };"
+export { };"
 `;
 
 exports[`tree-shaking 1`] = `
 "// index.d.ts
+import * as http from "node:http";
+
 //#region tests/fixtures/tree-shaking/mod.d.ts
 type A = string;
 //#endregion
@@ -496,7 +471,7 @@ export { type A };
 
 exports[`tsgo with custom path 1`] = `
 "// basic.d.ts
-//#region tests/fixtures/basic.d.ts
+//#region basic.d.ts
 declare const foo: number;
 type SomeType<T> = T;
 type FooType = string;
@@ -554,17 +529,16 @@ export { createComponent };"
 
 exports[`type-only export 1`] = `
 "// index.d.ts
-//#endregion
-//#region tests/fixtures/type-only-export/mod.d.ts
-declare class A {}
-declare class B {}
 declare namespace namespace_d_exports {
   export { ns };
 }
 declare const ns = 42;
+//#region tests/fixtures/type-only-export/mod.d.ts
+declare class A {}
+declare class B {}
 //#endregion
 //#region tests/fixtures/type-only-export/all.d.ts
 declare const all = 42;
 //#endregion
-export { A as RuntimeA, type A as TypeA, A as TypeC, type B as TypeB, all, type namespace_d_exports as ns };"
+export { A as RuntimeA, A as TypeA, B as TypeB, RuntimeA as TypeC, all, type namespace_d_exports as ns };"
 `;

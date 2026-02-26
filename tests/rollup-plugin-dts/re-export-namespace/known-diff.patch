@@ -11,11 +11,15 @@ Index: diff.patch
  declare function B(): void
  declare class C {}
  declare enum D {
-@@ -11,22 +14,5 @@
- declare class GenericC<T1, T2> {}
- declare function GenericF<T1, T2>(): void
- interface GenericI<T1, T2> {}
- declare type GenericT<T1, T2> = GenericI<T1, T2>
+@@ -7,26 +10,21 @@
+   B = 1
+ }
+ declare const E: string
+ declare type F = string
+-declare class GenericC<T1, T2> {}
+-declare function GenericF<T1, T2>(): void
+-interface GenericI<T1, T2> {}
+-declare type GenericT<T1, T2> = GenericI<T1, T2>
 -type namespace_d_A = A
 -declare const namespace_d_B: typeof B
 -type namespace_d_C = C
@@ -34,4 +38,20 @@ Index: diff.patch
 -  export { namespace_d_A as A, namespace_d_F as F, namespace_d_GenericI as GenericI, namespace_d_GenericT as GenericT }
 -}
 -export { namespace_d as ns1, namespace_d as ns2 }
++declare class GenericC<
++  T1
++  T2
++> {}
++declare function GenericF<
++  T1
++  T2
++>(): void
++interface GenericI<
++  T1
++  T2
++> {}
++declare type GenericT<
++  T1
++  T2
++> = GenericI<T1, T2>
 +export { namespace_d_exports as ns1, namespace_d_exports as ns2 }
